@@ -3,6 +3,13 @@ name: hil-display-arduino
 description: "Run a real-hardware (HIL) display/sequence proof for a WipperSnapper *Arduino firmware* board via the usbip-hil-controller's firmware-bench path — flash a combined image to a real MCU, confirm a v2 broker check-in, inject a display Add/Write (and/or other components) over the broker, and capture a camera proof of the lit panel. Use when adding/verifying on-board display support (i8080/SPI ST7789, ILI9341, SSD1306, EPD…) on a real Arduino board (ESP32-S3 etc.), driving it through .github/scripts/hil_display_test.py with a spec under .github/scripts/specs/, and surfacing serial/protomq/command logs + a visual proof in the PR. This is the MCU FIRMWARE path — NOT the python-snapper/Blinka path (that is the controller's hil-display-pytest skill), and NOT for authoring a brand-new controller stage (see the controller's hil-author-test skill)."
 ---
 
+> **Canonical source:** this skill is maintained in the HIL platform suite at
+> [Gundry-Consultancy/sbc-mcu-dut-controller `.agent/skills/hil-display-arduino`](https://github.com/Gundry-Consultancy/sbc-mcu-dut-controller/tree/main/.agent/skills/hil-display-arduino)
+> — edit there first, then refresh this copy. The suite README lists the full
+> skill set this builds on (hil-job-api, hil-author-test, hil-camera-proof,
+> hil-i2c-strands, hil-bench-recovery):
+> <https://github.com/Gundry-Consultancy/sbc-mcu-dut-controller/blob/main/.agent/skills/README.md>
+
 # hil-display-arduino
 
 Prove a WipperSnapper **Arduino firmware** display works on real hardware and
