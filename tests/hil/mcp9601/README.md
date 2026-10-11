@@ -28,11 +28,43 @@ idf.py build
 idf.py -p <SERIAL_PORT> flash monitor
 ```
 
-The serial console accepts commands: `help`, `id`, `scan`, `probe50`, `probemcp`, `captureid`, `capture50`, `wait10`, `reinit`, `stop`, `pulse1`, `pulse9`, `pulse18`, `levels`.
+The serial console accepts commands: `help`, `id`, `scan`, `probe50`, `probemcp`, `captureid`, `capture50`, `wait10`, `reinit`, `stop`, `pulse1`, `pulse9`, `pulse18`, `levels`, `wiring`.
+
+Before fault injection, verify the two loopbacks by explicitly running `wiring`: it temporarily releases the test I²C controller, pulls SCL LOW, toggles SDA LOW/HIGH **while SCL is LOW**, then releases SCL and checks that GPIO42/43 see each change. It prints a PASS/FAIL for each observation; this is **not** a two-channel RMT timestamp-alignment check, and it does add one test SCL excursion. Always run a valid `id` after this preflight and establish a clean baseline before measuring failure.
 
 Every risky intervention is **manual**. `stop` and `pulse*` temporarily relinquish the test I²C controller and operate **only the configured test-bus pins**, never the analogue mux. Operate only when the S31 is the sole master; later muxed masters must be disconnected/tri-stated. Software delays are not a substitute for verifying a valid electrical STOP: record SCL and SDA.
 
 `capture*` emits RMT pulse durations for both wires. RMT RX channels have separate first-edge time origins. Thus the trace is a useful per-line edge capture **but is not yet a synchronised two-channel protocol decode**. Use Picoprobe or a logic analyser to verify absolute alignment before interpreting precise START/ACK setup times. Very long transfers may overrun available RMT memory: start by capturing a single address probe.
+
+## Raspberry Pi USB serial host (Windows OpenSSH)
+
+This Pi can be accessed using the already-configured Windows OpenSSH client; **no SSH private keys belong in this repository or the test logs**. There is no direct SSH/serial execution service attached to this chat, so the following steps are for a Windows shell which already has an authorised host alias or destination.
+
+On the Windows machine (PowerShell), first identify the USB serial device exposed on the Pi:
+
+~~~powershell
+& "$env:WINDIR\\System32\\OpenSSH\\ssh.exe" -o BatchMode=yes <pi-ssh-host> 'ls -l /dev/serial/by-id/ 2>/dev/null; ls -l /dev/ttyACM* /dev/ttyUSB* 2>/dev/null; id'
+~~~
+
+On the Pi, from a working tree containing this branch, install python3-serial if needed and identify a stable USB path. **Do not assume the S31 is /dev/ttyACM0**: this Pi has multiple USB devices connected to its hub.
+
+~~~sh
+sudo apt install python3-serial
+python3 tests/hil/mcp9601/pi_serial.py list
+python3 tests/hil/mcp9601/pi_serial.py listen --port /dev/serial/by-id/<MATCH-S31> --duration 4
+~~~
+
+The helper never opens a serial port while listing. For other actions the port must be explicit:
+
+~~~sh
+python3 tests/hil/mcp9601/pi_serial.py wiring --port /dev/serial/by-id/<MATCH-S31> --allow-io --jsonl /tmp/mcp9601-preflight.jsonl
+python3 tests/hil/mcp9601/pi_serial.py id --port /dev/serial/by-id/<MATCH-S31> --allow-io --jsonl /tmp/mcp9601-baseline.jsonl
+python3 tests/hil/mcp9601/pi_serial.py capture50 --port /dev/serial/by-id/<MATCH-S31> --allow-io --duration 7 --jsonl /tmp/mcp9601-probe50.jsonl
+~~~
+
+USB-UART DTR/RTS can reset some Espressif dev boards on serial-open, which **is not equivalent to power-cycling the MCP9601** but does reset the test controller. The helper preconfigures DTR/RTS inactive before opening, but this should be checked for the chosen board. Port ownership may also require membership in the Pi's \`dialout\` group.
+
+The Pi-side helper is only a serial front-end. It does not build or flash the uncompiled S31 firmware. Firmware compilation and first capture remain separate validation tasks. The initial RMT implementation has not been electrically verified.
 
 ## Separate trials — do not chain recovery mechanisms
 
