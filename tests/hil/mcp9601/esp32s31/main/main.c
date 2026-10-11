@@ -1,5 +1,5 @@
 /*
- * MCP9601 failure/recovery experiment, ESP32-S31 (ESP-IDF 5.x+).
+ * MCP9601 failure/recovery experiment, ESP32-S31 (ESP-IDF 6.x+).
  * Experimental fixture: do not reuse mux-bus GPIOs. No automatic probes at boot.
  */
 #include <stdio.h>
