@@ -6,15 +6,19 @@
 
 * ESP32-S31: sole I²C master, running the independent ESP-IDF firmware in `esp32s31/`.
 * MCP9601: only device on this test bus; its 7-bit address is configurable (0x67 default).
-* Observe physical test-bus SDA/SCL using **two separate high-impedance S31 GPIO inputs** connected in parallel to those bus wires. RMT RX is assigned only to these dedicated sniff pins.
+* Observe physical test-bus SDA/SCL using **two separate high-impedance S31 GPIO inputs** connected in parallel to those bus wires. The first two allocated RMT RX channels are routed to GPIO42 and GPIO43 respectively (software-allocated channels; S31 has no fixed RMT-only GPIO bank).
 * **Do not reassign or touch the S31's existing analogue-mux I²C pins**, and do not connect another bus master without first physically isolating or disabling the S31 master.
 * All grounds common; verify 3.3 V levels and pull-ups. No output drive from sniff pins.
 
-GPIO selection is deliberately left unconfigured by default. Set the **test-bus** I²C pins, independent sniff pins and bus port under `idf.py menuconfig → MCP9601 HIL`. The firmware refuses to start if pins are missing or overlap, and never probes or pulses anything automatically at boot.
+The S31 I²C pin defaults are now **SDA GPIO2 / SCL GPIO3** (as supplied for Arduino-ESP32 4.x / ESP-IDF 6.x); the separate logic capture defaults are **GPIO42 (SCL observer) / GPIO43 (SDA observer)**. These are non-SPI GPIOs that are also ADC inputs; they are assigned here only as high-impedance RMT RX inputs. If using Espressif Function-CoreBoard-1, GPIO42 is J2 pin 20 and GPIO43 is J2 pin 17; on another S31 board, confirm the header mapping from its schematic.
+
+**Physical loopbacks needed:** bridge test-bus GPIO3 (SCL) to observer GPIO42; bridge test-bus GPIO2 (SDA) to observer GPIO43. Do not accidentally connect a logic analyser input to an unrelated header labelled "LA0" or "LA1" without checking its actual GPIO mapping. The inputs must be 3.3 V compatible, floating pull-ups must not be supplied by the observer wires, and GPIO42/43 must not already be used by an analogue function or other peripheral.
+
+Override defaults under `idf.py menuconfig → MCP9601 HIL` if the actual board has conflicts. The firmware still refuses duplicate/invalid GPIOs and does not run probes or recovery at boot. In ESP-IDF, RMT receiver channels are dynamically allocated; the first two requested logical captures are SCL and SDA.
 
 ## Build / operate
 
-Use an ESP-IDF checkout that supports `esp32s31` (currently IDF master/preview):
+Use an ESP-IDF checkout that supports `esp32s31` (ESP-IDF 6.1 stable or newer):
 
 ```sh
 cd tests/hil/mcp9601/esp32s31
