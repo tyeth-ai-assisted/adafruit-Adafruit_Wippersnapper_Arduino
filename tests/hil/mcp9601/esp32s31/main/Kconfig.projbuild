@@ -4,21 +4,21 @@ menu "MCP9601 HIL"
         range 0 1
         default 1
     config MCP_HIL_SCL_GPIO
-        int "Test-bus SCL output GPIO (NOT analogue mux)"
+        int "Test-bus SCL output GPIO (Arduino default)"
         range -1 61
-        default -1
+        default 3
     config MCP_HIL_SDA_GPIO
-        int "Test-bus SDA output GPIO (NOT analogue mux)"
+        int "Test-bus SDA output GPIO (Arduino default)"
         range -1 61
-        default -1
+        default 2
     config MCP_HIL_SNIFF_SCL_GPIO
-        int "Independent high-impedance SCL RMT observer GPIO"
+        int "Independent high-impedance SCL RMT observer GPIO (J2 pin 20 on CoreBoard-1)"
         range -1 61
-        default -1
+        default 42
     config MCP_HIL_SNIFF_SDA_GPIO
-        int "Independent high-impedance SDA RMT observer GPIO"
+        int "Independent high-impedance SDA RMT observer GPIO (J2 pin 17 on CoreBoard-1)"
         range -1 61
-        default -1
+        default 43
     config MCP_HIL_MCP_ADDRESS
         int "7-bit MCP9601 address, decimal (103 = 0x67)"
         range 8 119
