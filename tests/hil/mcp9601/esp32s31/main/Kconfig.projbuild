@@ -1,0 +1,30 @@
+menu "MCP9601 HIL"
+    config MCP_HIL_I2C_PORT
+        int "Exclusive test-bus I2C peripheral index (NOT the analogue mux bus)"
+        range 0 1
+        default 1
+    config MCP_HIL_SCL_GPIO
+        int "Test-bus SCL output GPIO (NOT analogue mux)"
+        range -1 61
+        default -1
+    config MCP_HIL_SDA_GPIO
+        int "Test-bus SDA output GPIO (NOT analogue mux)"
+        range -1 61
+        default -1
+    config MCP_HIL_SNIFF_SCL_GPIO
+        int "Independent high-impedance SCL RMT observer GPIO"
+        range -1 61
+        default -1
+    config MCP_HIL_SNIFF_SDA_GPIO
+        int "Independent high-impedance SDA RMT observer GPIO"
+        range -1 61
+        default -1
+    config MCP_HIL_MCP_ADDRESS
+        int "7-bit MCP9601 address, decimal (103 = 0x67)"
+        range 8 119
+        default 103
+    config MCP_HIL_SPEED_HZ
+        int "Test-bus I2C clock in Hz"
+        range 10000 100000
+        default 100000
+endmenu
