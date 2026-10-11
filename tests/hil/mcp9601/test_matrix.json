@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "fixture": "s31-mcp9601-only",
+  "preconditions": [
+    "test-bus I2C electrically isolated from analogue mux I2C pins",
+    "3.3 V logic and shared GND",
+    "separate high impedance sniff GPIOs connected to test-bus SCL/SDA",
+    "no other master electrically connected",
+    "fresh healthy baseline for each recovery candidate"
+  ],
+  "current": [
+    {
+      "id": "B0",
+      "op": "id",
+      "purpose": "valid baseline ID read of register 0x20; device ID high byte 0x41",
+      "stage": "ready_after_pin_configuration"
+    },
+    {
+      "id": "B1",
+      "op": "capture50",
+      "purpose": "probe unrelated EDID address 0x50, capture waveform then verify ID",
+      "stage": "ready_after_pin_configuration"
+    },
+    {
+      "id": "B2",
+      "op": "scan",
+      "purpose": "full 0x08..0x77 address sweep INCLUDING MCP9601; verify ID",
+      "stage": "ready_after_pin_configuration"
+    },
+    {
+      "id": "B3",
+      "op": "levels",
+      "purpose": "record SDA/SCL idle line levels after ID read failure",
+      "stage": "ready_after_pin_configuration"
+    },
+    {
+      "id": "R0",
+      "op": "wait10",
+      "purpose": "ten-second no-action control; then ID",
+      "stage": "ready_after_reproduced_failure"
+    },
+    {
+      "id": "R1",
+      "op": "reinit",
+      "purpose": "teardown/rebuild ESP-IDF master peripheral; then ID",
+      "stage": "ready_after_reproduced_failure"
+    },
+    {
+      "id": "R2",
+      "op": "stop",
+      "purpose": "forced START/STOP-like GPIO transitions without complete SCL pulse; then ID",
+      "stage": "ready_after_reproduced_failure"
+    },
+    {
+      "id": "R3",
+      "op": "pulse1",
+      "purpose": "one SCL pulse followed by STOP; then ID",
+      "stage": "ready_after_reproduced_failure"
+    },
+    {
+      "id": "R4",
+      "op": "pulse9",
+      "purpose": "nine SCL pulses followed by STOP; then ID",
+      "stage": "ready_after_reproduced_failure"
+    },
+    {
+      "id": "R5",
+      "op": "pulse18",
+      "purpose": "eighteen SCL pulses followed by STOP; then ID",
+      "stage": "ready_after_reproduced_failure"
+    },
+    {
+      "id": "R6",
+      "op": "probe50",
+      "purpose": "ordinary controller-generated probe + STOP; then ID",
+      "stage": "ready_after_reproduced_failure"
+    }
+  ],
+  "future": [
+    {
+      "id": "F1",
+      "fixture": "RP2350-Picoprobe",
+      "ports": [
+        "Arduino-Pico",
+        "CircuitPython"
+      ],
+      "purpose": "compare controller reset, CP construction STOP and captured bit patterns"
+    },
+    {
+      "id": "F2",
+      "fixture": "Espressif-DevKit",
+      "ports": [
+        "Arduino",
+        "CircuitPython"
+      ],
+      "purpose": "compare port-level probing/deinit semantics"
+    },
+    {
+      "id": "F3",
+      "fixture": "SBC",
+      "ports": [
+        "Linux Blinka",
+        "CPython smbus2"
+      ],
+      "purpose": "detect controller/kernel limits and test legal transactions through /dev/i2c"
+    },
+    {
+      "id": "F4",
+      "fixture": "MCP9601-plus-random-sensor",
+      "ports": [
+        "all"
+      ],
+      "purpose": "regression: second sensor works before/after recovery; register state unchanged"
+    }
+  ],
+  "classification": {
+    "confirmed_failure": "MCP9601 ID read worked initially, then fails after trigger without VDD interruption",
+    "high_high_unresponsive": "confirmed_failure AND physical SDA=HIGH AND SCL=HIGH after transfer",
+    "recovered": "a valid 0x41xx ID read succeeds after exactly one intervention",
+    "no_recovery": "ID still fails after selected intervention",
+    "inconclusive": "baseline unverified, missing waveforms, other master active, or lost RMT samples"
+  },
+  "capture": {
+    "format": "human-readable RMT pulse duration lines; independent time axes",
+    "limitations": [
+      "RMT RX starts on first line transition, per-channel alignment not established",
+      "buffer overrun possible on full scans",
+      "idle-high pin levels are observations, not device communication proof"
+    ]
+  }
+}
