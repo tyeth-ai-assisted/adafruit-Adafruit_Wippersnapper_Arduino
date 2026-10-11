@@ -12,6 +12,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "esp_rom_sys.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -76,11 +77,11 @@ static void levels(void) {
 }
 static void idle_us(unsigned microseconds) { esp_rom_delay_us(microseconds); }
 static void pull_low(int pin) {
-    gpio_set_direction(pin,GPIO_MODE_OUTPUT_OD);
+    gpio_set_direction(pin,GPIO_MODE_INPUT_OUTPUT_OD);
     gpio_set_level(pin,0);
 }
 static void release_pin(int pin) {
-    gpio_set_direction(pin,GPIO_MODE_OUTPUT_OD);
+    gpio_set_direction(pin,GPIO_MODE_INPUT_OUTPUT_OD);
     gpio_set_level(pin,1);
 }
 static bool wait_high(int pin) {
