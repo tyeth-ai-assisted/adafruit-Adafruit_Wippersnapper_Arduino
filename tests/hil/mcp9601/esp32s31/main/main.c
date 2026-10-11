@@ -77,16 +77,50 @@ static void levels(void) {
 }
 static void idle_us(unsigned microseconds) { esp_rom_delay_us(microseconds); }
 static void pull_low(int pin) {
+    gpio_set_level(pin,0); // preset output latch before enabling output mode
     gpio_set_direction(pin,GPIO_MODE_INPUT_OUTPUT_OD);
-    gpio_set_level(pin,0);
 }
 static void release_pin(int pin) {
+    gpio_set_level(pin,1); // avoid a spurious falling edge on mode transition
     gpio_set_direction(pin,GPIO_MODE_INPUT_OUTPUT_OD);
-    gpio_set_level(pin,1);
 }
 static bool wait_high(int pin) {
     for(int i=0;i<100;i++) {if(gpio_get_level(pin)) return true;idle_us(10);}
     return false;
+}
+/* Optional physical loopback preflight. SDA changes only while SCL is LOW,
+ * avoiding an unaddressed START or STOP. One SCL excursion is nevertheless
+ * generated; run only after a known-good, idle baseline, never as recovery.
+ */
+static void wiring_test(void) {
+    esp_err_t e=release_bus();
+    if(e!=ESP_OK) {
+        printf("wiring: release failed: %s\n",esp_err_to_name(e));
+        return;
+    }
+    release_pin(SCL);
+    release_pin(SDA);
+    idle_us(40);
+    bool idle=wait_high(SCL) && wait_high(SDA)
+        && gpio_get_level(OBSCL)==1 && gpio_get_level(OBSDA)==1;
+    pull_low(SCL);
+    idle_us(40);
+    bool scl_low=gpio_get_level(OBSCL)==0 && gpio_get_level(OBSDA)==1;
+    pull_low(SDA);
+    idle_us(40);
+    bool sda_low=gpio_get_level(OBSCL)==0 && gpio_get_level(OBSDA)==0;
+    release_pin(SDA);
+    idle_us(40);
+    bool sda_released=gpio_get_level(OBSCL)==0 && gpio_get_level(OBSDA)==1;
+    release_pin(SCL);
+    idle_us(40);
+    bool released=wait_high(SCL) && gpio_get_level(OBSCL)==1
+        && gpio_get_level(OBSDA)==1;
+    e=init_bus();
+    printf("wiring: idle=%s scl_follows=%s sda_follows=%s "
+           "sda_releases=%s both_release=%s reinit=%s\n",
+           idle?"PASS":"FAIL", scl_low?"PASS":"FAIL",sda_low?"PASS":"FAIL",
+           sda_released?"PASS":"FAIL",released?"PASS":"FAIL",esp_err_to_name(e));
 }
 static esp_err_t forced_stop_and_clocks(int count) {
     esp_err_t e=release_bus();
@@ -163,7 +197,7 @@ static void captured_probe(bool at50) {
     finish_capture(&scl);finish_capture(&sda);
 }
 static void help(void) {
-    puts("help | id | scan | probe50 | probemcp | captureid | capture50 | levels");
+    puts("help | id | scan | probe50 | probemcp | captureid | capture50 | levels | wiring");
     puts("wait10 | reinit | stop | pulse1 | pulse9 | pulse18");
 }
 void app_main(void) {
@@ -184,6 +218,7 @@ void app_main(void) {
         if(!strcmp(cmd,"help"))help();
         else if(!strcmp(cmd,"id"))read_id();
         else if(!strcmp(cmd,"levels"))levels();
+        else if(!strcmp(cmd,"wiring"))wiring_test();
         else if(!strcmp(cmd,"scan")) {
             for(int a=0x08;a<=0x77;a++) {
                 esp_err_t p=probe(a);
